@@ -65,98 +65,6 @@ locals {
   cache = local.cache_def[var.cache_enabled ? "true" : "false"]
 }
 
-resource "aws_iam_role" "default" {
-  count                 = var.enabled ? 1 : 0
-  name                  = module.label.id
-  assume_role_policy    = data.aws_iam_policy_document.role.json
-  force_detach_policies = "true"
-}
-
-data "aws_iam_policy_document" "role" {
-  statement {
-    sid = ""
-
-    actions = [
-      "sts:AssumeRole",
-    ]
-
-    principals {
-      type        = "Service"
-      identifiers = ["codebuild.amazonaws.com"]
-    }
-
-    effect = "Allow"
-  }
-}
-
-resource "aws_iam_policy" "default" {
-  count  = var.enabled ? 1 : 0
-  name   = module.label.id
-  path   = "/service-role/"
-  policy = data.aws_iam_policy_document.permissions.json
-}
-
-resource "aws_iam_policy" "default_cache_bucket" {
-  count  = var.enabled && var.cache_enabled ? 1 : 0
-  name   = "${module.label.id}-cache-bucket"
-  path   = "/service-role/"
-  policy = join("", data.aws_iam_policy_document.permissions_cache_bucket.*.json)
-}
-
-data "aws_iam_policy_document" "permissions" {
-  statement {
-    sid = ""
-
-    actions = [
-	  "ecr:*",
-      "ecs:RunTask",
-      "iam:PassRole",
-      "logs:CreateLogGroup",
-      "logs:CreateLogStream",
-      "logs:PutLogEvents",
-	  "s3:*",
-      "ssm:GetParameters",
-    ]
-
-    effect = "Allow"
-
-    resources = [
-      "*",
-    ]
-  }
-}
-
-data "aws_iam_policy_document" "permissions_cache_bucket" {
-  count = var.enabled && var.cache_enabled ? 1 : 0
-
-  statement {
-    sid = ""
-
-    actions = [
-      "s3:*",
-    ]
-
-    effect = "Allow"
-
-    resources = [
-      join("", aws_s3_bucket.cache_bucket.*.arn),
-      "${join("", aws_s3_bucket.cache_bucket.*.arn)}/*",
-    ]
-  }
-}
-
-resource "aws_iam_role_policy_attachment" "default" {
-  count      = var.enabled ? 1 : 0
-  policy_arn = join("", aws_iam_policy.default.*.arn)
-  role       = join("", aws_iam_role.default.*.id)
-}
-
-resource "aws_iam_role_policy_attachment" "default_cache_bucket" {
-  count      = var.enabled && var.cache_enabled ? 1 : 0
-  policy_arn = join("", aws_iam_policy.default_cache_bucket.*.arn)
-  role       = join("", aws_iam_role.default.*.id)
-}
-
 data "aws_secretsmanager_secret_version" "github_access_token" {
   secret_id = "pureweb/build/libraries"
 }
@@ -170,7 +78,7 @@ resource "aws_codebuild_source_credential" "github_credential" {
 resource "aws_codebuild_project" "default" {
   count         = var.enabled ? 1 : 0
   name          = module.label.id
-  service_role  = join("", aws_iam_role.default.*.arn)
+  service_role  = "arn:aws:iam::630322998121:role/pw5-build-module-role" 
   badge_enabled = var.badge_enabled
   build_timeout = var.build_timeout
 

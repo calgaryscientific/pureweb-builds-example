@@ -155,7 +155,13 @@ variable "branch_hook" {
 }
 
 variable "event_triggers" {
-  type		  = string
-  default	  = "PUSH, PULL_REQUEST_MERGED"
+  type        = string
+  default     = "PUSH, PULL_REQUEST_MERGED"
   description = "The events that trigger code build"
+}
+
+variable "enable_notifications" {
+  type        = bool
+  default     = true
+  description = "If enabled codebuild will send build notifications to slack and email"
 }

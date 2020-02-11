@@ -170,7 +170,7 @@ resource "aws_codebuild_webhook" "default" {
 
 resource "aws_cloudwatch_event_rule" "default" {
   count       = var.enabled && var.enable_notifications ? 1 : 0
-  name        = "${aws_codebuild_project.default[count.index].name}-cloudwatch-event-rule"
+  name        = "pw5-${var.name}-${var.stage}-event-rule"
   description = "Rule for which events should be pushed to sns"
 
   event_pattern = <<PATTERN
@@ -196,7 +196,7 @@ PATTERN
 resource "aws_cloudwatch_event_target" "sns_event_target" {
   count     = var.enabled && var.enable_notifications ? 1 : 0
   rule      = aws_cloudwatch_event_rule.default[count.index].name
-  target_id = "${aws_codebuild_project.default[count.index].name}-cloudwatch-sns"
+  target_id = "${var.name}-cloudwatch-sns"
   arn       = "arn:aws:sns:us-west-2:630322998121:pw5-build-notifications-topic"
 
   input_transformer {
@@ -215,7 +215,7 @@ resource "aws_cloudwatch_event_target" "sns_event_target" {
 resource "aws_cloudwatch_event_target" "lambda_event_target" {
   count     = var.enabled && var.enable_notifications ? 1 : 0
   rule      = aws_cloudwatch_event_rule.default[count.index].name
-  target_id = "${aws_codebuild_project.default[count.index].name}-cloudwatch-lambda"
+  target_id = "${var.name}-cloudwatch-lambda"
   arn       = "arn:aws:lambda:us-west-2:630322998121:function:codebuild_slackbot_lambda"
 
   input_transformer {
@@ -241,4 +241,13 @@ resource "aws_cloudwatch_event_target" "lambda_event_target" {
 }
 INPUT_TEMPLATE
   }
+}
+
+resource "aws_lambda_permission" "allow_cloudwatch_events" {
+  count         = var.enabled && var.enable_notifications ? 1 : 0
+  statement_id  = "${aws_codebuild_project.default[count.index].name}-AllowExecutionFromCloudWatchEvent"
+  action        = "lambda:InvokeFunction"
+  function_name = "codebuild_slackbot_lambda"
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.default[count.index].arn
 }

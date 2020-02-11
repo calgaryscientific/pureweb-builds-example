@@ -59,7 +59,7 @@ module "build" {
 
   # should the slackbot and email notifications be send for this build 
   # default value
-  # enable_notifications = true
+  enable_notifications = false
 
   # for the specified branch you can trigger a build on a specifed action the options include "PUSH, PULL_REQUEST_MERGED, PULL_REQUEST_CREATED, PULL_REQUEST_UPDATED, PULL_REQUEST_REOPENED"
   # default value
